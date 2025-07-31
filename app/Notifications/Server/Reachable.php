@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class Reachable extends CustomEmailNotification
@@ -73,5 +74,31 @@ class Reachable extends CustomEmailNotification
             description: "Server '{$this->server->name}' revived.\nAll automations & integrations are turned on again!",
             color: SlackMessage::successColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: "Server '{$this->server->name}' revived",
+            summary: "Server is reachable again",
+            themeColor: TeamsMessage::COLOR_SUCCESS
+        );
+
+        $message->addSection(
+            title: 'Server Information',
+            facts: [
+                ['Server', $this->server->name],
+                ['IP Address', $this->server->ip],
+                ['Status', 'Reachable'],
+            ]
+        );
+
+        $message->addSection(
+            text: 'All automations & integrations are turned on again!'
+        );
+
+        $message->addAction('View Server', base_url().'/server/'.$this->server->uuid);
+
+        return $message;
     }
 }

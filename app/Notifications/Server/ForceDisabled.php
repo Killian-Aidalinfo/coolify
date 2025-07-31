@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ForceDisabled extends CustomEmailNotification
@@ -73,5 +74,27 @@ class ForceDisabled extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Server disabled',
+            summary: "Server '{$this->server->name}' has been disabled",
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Server Force Disabled',
+            $this->server->name,
+            "Server has been disabled because it is not paid. All automations and integrations are stopped."
+        );
+
+        $message->addFact('Server Name', $this->server->name)
+            ->addFact('Status', 'Disabled')
+            ->addFact('Reason', 'Payment required')
+            ->addAction('Update Subscription', 'https://app.coolify.io/subscriptions');
+
+        return $message;
     }
 }

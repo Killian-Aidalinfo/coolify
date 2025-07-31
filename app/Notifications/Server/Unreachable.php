@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class Unreachable extends CustomEmailNotification
@@ -81,5 +82,25 @@ class Unreachable extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Server unreachable',
+            summary: "Server '{$this->server->name}' is unreachable",
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Server Unreachable',
+            $this->server->name,
+            'Your server is unreachable. All automations & integrations are turned off!'
+        );
+
+        $message->addFact('Status', 'Unreachable')
+            ->addFact('Important', 'We automatically try to revive your server and turn on all automations & integrations.');
+
+        return $message;
     }
 }

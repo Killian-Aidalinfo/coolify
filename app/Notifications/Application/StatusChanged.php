@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class StatusChanged extends CustomEmailNotification
@@ -112,5 +113,31 @@ class StatusChanged extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Application stopped',
+            summary: "{$this->resource_name} has been stopped",
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Application Status Changed',
+            $this->resource_name,
+            'The application has been stopped.'
+        );
+
+        $message->addFact('Project', data_get($this->resource, 'environment.project.name'))
+            ->addFact('Environment', $this->environment_name);
+
+        if ($this->fqdn) {
+            $message->addFact('Domain', $this->fqdn);
+        }
+
+        $message->addAction('Open Application in Coolify', $this->resource_url);
+
+        return $message;
     }
 }

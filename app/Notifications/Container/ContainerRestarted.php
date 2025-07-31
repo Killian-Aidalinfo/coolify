@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ContainerRestarted extends CustomEmailNotification
@@ -101,5 +102,29 @@ class ContainerRestarted extends CustomEmailNotification
             description: $description,
             color: SlackMessage::warningColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: "Resource {$this->name} restarted",
+            summary: "Resource restarted automatically",
+            themeColor: TeamsMessage::COLOR_WARNING
+        );
+
+        $message->addSection(
+            title: 'Resource Information',
+            facts: [
+                ['Resource', $this->name],
+                ['Server', $this->server->name],
+                ['Status', 'Restarted Automatically'],
+            ]
+        );
+
+        if ($this->url) {
+            $message->addAction('View Resource', $this->url);
+        }
+
+        return $message;
     }
 }

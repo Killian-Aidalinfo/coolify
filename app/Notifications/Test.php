@@ -6,10 +6,12 @@ use App\Notifications\Channels\DiscordChannel;
 use App\Notifications\Channels\EmailChannel;
 use App\Notifications\Channels\PushoverChannel;
 use App\Notifications\Channels\SlackChannel;
+use App\Notifications\Channels\TeamsChannel;
 use App\Notifications\Channels\TelegramChannel;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -36,6 +38,7 @@ class Test extends Notification implements ShouldQueue
                 'telegram' => [TelegramChannel::class],
                 'slack' => [SlackChannel::class],
                 'pushover' => [PushoverChannel::class],
+                'teams' => [TeamsChannel::class],
                 default => [],
             };
         } else {
@@ -109,5 +112,25 @@ class Test extends Notification implements ShouldQueue
             title: 'Test Slack Notification',
             description: 'This is a test Slack notification from Coolify.'
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Test Microsoft Teams Notification',
+            summary: 'Test notification from Coolify',
+            themeColor: TeamsMessage::successColor()
+        );
+
+        $message->addSection(
+            'Notification Test',
+            'Test successful',
+            'This is a test Microsoft Teams notification from Coolify.'
+        )
+        ->addFact('Status', 'Success')
+        ->addFact('Source', 'Coolify')
+        ->addAction('Go to Dashboard', base_url());
+
+        return $message;
     }
 }

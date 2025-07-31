@@ -8,6 +8,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class DeploymentSuccess extends CustomEmailNotification
@@ -204,5 +205,41 @@ class DeploymentSuccess extends CustomEmailNotification
             description: $description,
             color: SlackMessage::successColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        if ($this->preview) {
+            $title = "Pull request #{$this->preview->pull_request_id} successfully deployed";
+            $summary = "PR #{$this->preview->pull_request_id} deployed for {$this->application_name}";
+        } else {
+            $title = 'New version successfully deployed';
+            $summary = "New version deployed for {$this->application_name}";
+        }
+
+        $message = new TeamsMessage(
+            title: $title,
+            summary: $summary,
+            themeColor: TeamsMessage::successColor()
+        );
+
+        $message->addSection(
+            'Deployment Successful',
+            $this->application_name,
+            $this->preview ? "Pull request #{$this->preview->pull_request_id} has been deployed successfully." : 'A new version has been deployed successfully.'
+        );
+
+        $message->addFact('Project', data_get($this->application, 'environment.project.name'))
+            ->addFact('Environment', $this->environment_name);
+
+        if ($this->preview && $this->preview->fqdn) {
+            $message->addAction('Open Preview', $this->preview->fqdn);
+        } elseif ($this->fqdn) {
+            $message->addAction('Open Application', $this->fqdn);
+        }
+
+        $message->addAction('View Deployment Logs', $this->deployment_url);
+
+        return $message;
     }
 }

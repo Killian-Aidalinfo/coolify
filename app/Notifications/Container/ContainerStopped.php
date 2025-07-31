@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ContainerStopped extends CustomEmailNotification
@@ -101,5 +102,33 @@ class ContainerStopped extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: "Resource {$this->name} stopped unexpectedly",
+            summary: "Resource stopped unexpectedly",
+            themeColor: TeamsMessage::COLOR_ERROR
+        );
+
+        $message->addSection(
+            title: 'Resource Information',
+            facts: [
+                ['Resource', $this->name],
+                ['Server', $this->server->name],
+                ['Status', 'Stopped Unexpectedly'],
+            ]
+        );
+
+        $message->addSection(
+            text: 'The resource has been stopped unexpectedly. Please check the application logs for more information.'
+        );
+
+        if ($this->url) {
+            $message->addAction('View Resource', $this->url);
+        }
+
+        return $message;
     }
 }
