@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class TaskFailed extends CustomEmailNotification
@@ -113,5 +114,30 @@ class TaskFailed extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Scheduled task failed',
+            summary: "Scheduled task ({$this->task->name}) failed",
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Task Failed',
+            $this->task->name,
+            "Scheduled task ({$this->task->name}) has failed."
+        );
+
+        if ($this->output) {
+            $message->addFact('Error Output', substr($this->output, 0, 100) . (strlen($this->output) > 100 ? '...' : ''));
+        }
+
+        if ($this->url) {
+            $message->addAction('Open Task in Coolify', $this->url);
+        }
+
+        return $message;
     }
 }

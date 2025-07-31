@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ServerPatchCheck extends CustomEmailNotification
@@ -344,5 +345,86 @@ class ServerPatchCheck extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        // Handle error case
+        if (isset($this->patchData['error'])) {
+            $osId = $this->patchData['osId'] ?? 'unknown';
+            $packageManager = $this->patchData['package_manager'] ?? 'unknown';
+            $error = $this->patchData['error'];
+
+            $message = new TeamsMessage(
+                title: 'Server patch check failed',
+                summary: "Failed to check patches on server '{$this->server->name}'",
+                themeColor: TeamsMessage::errorColor()
+            );
+
+            $message->addSection(
+                'Patch Check Error',
+                $this->server->name,
+                "Failed to check for updates on server."
+            );
+
+            $message->addFact('Server Name', $this->server->name)
+                ->addFact('OS', ucfirst($osId))
+                ->addFact('Package Manager', $packageManager)
+                ->addFact('Error', $error)
+                ->addAction('Manage Server', $this->serverUrl);
+
+            return $message;
+        }
+
+        $totalUpdates = $this->patchData['total_updates'] ?? 0;
+        $updates = $this->patchData['updates'] ?? [];
+        $osId = $this->patchData['osId'] ?? 'unknown';
+        $packageManager = $this->patchData['package_manager'] ?? 'unknown';
+
+        $message = new TeamsMessage(
+            title: 'Server patches available',
+            summary: "{$totalUpdates} patches available for server '{$this->server->name}'",
+            themeColor: TeamsMessage::warningColor()
+        );
+
+        $message->addSection(
+            'Server Patches Available',
+            $this->server->name,
+            "Action required: {$totalUpdates} package updates are available for your server."
+        );
+
+        $message->addFact('Server Name', $this->server->name)
+            ->addFact('OS', ucfirst($osId))
+            ->addFact('Package Manager', $packageManager)
+            ->addFact('Total Updates', (string) $totalUpdates);
+
+        // Check for critical packages
+        if (count($updates) > 0) {
+            $criticalPackages = collect($updates)->filter(function ($update) {
+                return str_contains(strtolower($update['package']), 'docker') ||
+                    str_contains(strtolower($update['package']), 'kernel') ||
+                    str_contains(strtolower($update['package']), 'openssh') ||
+                    str_contains(strtolower($update['package']), 'ssl');
+            });
+
+            if ($criticalPackages->count() > 0) {
+                $message->addFact('Critical Packages', $criticalPackages->count() . ' packages may require restarts');
+            }
+
+            // Show sample updates
+            $sampleUpdates = array_slice($updates, 0, 3);
+            $sampleText = '';
+            foreach ($sampleUpdates as $update) {
+                $sampleText .= "• {$update['package']}: {$update['current_version']} → {$update['new_version']}\n";
+            }
+            if (count($updates) > 3) {
+                $sampleText .= '• ... and ' . (count($updates) - 3) . " more packages";
+            }
+            $message->addFact('Sample Updates', trim($sampleText));
+        }
+
+        $message->addAction('Manage Server Patches', $this->serverUrl);
+
+        return $message;
     }
 }
