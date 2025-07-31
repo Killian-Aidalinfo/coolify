@@ -8,6 +8,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class DeploymentFailed extends CustomEmailNotification
@@ -184,5 +185,39 @@ class DeploymentFailed extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        if ($this->preview) {
+            $title = "Pull request #{$this->preview->pull_request_id} deployment failed";
+            $summary = "PR #{$this->preview->pull_request_id} deployment failed for {$this->application_name}";
+        } else {
+            $title = 'Deployment failed';
+            $summary = "Deployment failed for {$this->application_name}";
+        }
+
+        $message = new TeamsMessage(
+            title: $title,
+            summary: $summary,
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Deployment Failed',
+            $this->application_name,
+            $this->preview ? "Pull request #{$this->preview->pull_request_id} deployment has failed." : 'The deployment has failed.'
+        );
+
+        $message->addFact('Project', data_get($this->application, 'environment.project.name'))
+            ->addFact('Environment', $this->environment_name);
+
+        if ($this->fqdn) {
+            $message->addFact('Domain', $this->fqdn);
+        }
+
+        $message->addAction('View Deployment Logs', $this->deployment_url);
+
+        return $message;
     }
 }

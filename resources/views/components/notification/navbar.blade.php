@@ -19,6 +19,10 @@
                 href="{{ route('notifications.slack') }}">
                 <button>Slack</button>
             </a>
+            <a class="{{ request()->routeIs('notifications.teams') ? 'dark:text-white' : '' }}"
+                href="{{ route('notifications.teams') }}">
+                <button>Teams</button>
+            </a>
             <a class="{{ request()->routeIs('notifications.pushover') ? 'dark:text-white' : '' }}"
                 href="{{ route('notifications.pushover') }}">
                 <button>Pushover</button>
