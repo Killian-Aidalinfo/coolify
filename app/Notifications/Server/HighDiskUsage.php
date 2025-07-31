@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class HighDiskUsage extends CustomEmailNotification
@@ -87,5 +88,34 @@ class HighDiskUsage extends CustomEmailNotification
             description: $description,
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: "High disk usage detected on {$this->server->name}",
+            summary: "Server high disk usage detected",
+            themeColor: TeamsMessage::COLOR_ERROR
+        );
+
+        $message->addSection(
+            title: 'Server Information',
+            facts: [
+                ['Server', $this->server->name],
+                ['Disk Usage', "{$this->disk_usage}%"],
+                ['Threshold', "{$this->server_disk_usage_notification_threshold}%"],
+                ['IP Address', $this->server->ip],
+            ]
+        );
+
+        $message->addSection(
+            text: 'Please cleanup your disk to prevent data-loss.'
+        );
+
+        $message->addAction('View Server Settings', base_url().'/server/'.$this->server->uuid.'#advanced');
+        $message->addAction('Cleanup Tips', 'https://coolify.io/docs/knowledge-base/server/automated-cleanup');
+        $message->addAction('Configure Notifications', base_url().'/notifications/teams');
+
+        return $message;
     }
 }

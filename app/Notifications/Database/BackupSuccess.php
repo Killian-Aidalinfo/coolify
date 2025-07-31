@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class BackupSuccess extends CustomEmailNotification
@@ -84,5 +85,24 @@ class BackupSuccess extends CustomEmailNotification
             description: $description,
             color: SlackMessage::successColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Database backup successful',
+            summary: "Database backup successful for {$this->name}",
+            themeColor: TeamsMessage::successColor()
+        );
+
+        $message->addSection(
+            'Backup Successful',
+            $this->name,
+            "Database backup for {$this->database_name} was successful."
+        );
+
+        $message->addFact('Frequency', $this->frequency);
+
+        return $message;
     }
 }

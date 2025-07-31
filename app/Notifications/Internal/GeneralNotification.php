@@ -5,6 +5,7 @@ namespace App\Notifications\Internal;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
@@ -57,5 +58,25 @@ class GeneralNotification extends Notification implements ShouldQueue
             description: $this->message,
             color: SlackMessage::infoColor(),
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'General Notification',
+            summary: 'Coolify general notification',
+            themeColor: TeamsMessage::infoColor()
+        );
+
+        $message->addSection(
+            'Coolify Notification',
+            'General',
+            $this->message
+        );
+
+        $message->addFact('Type', 'General Notification')
+            ->addFact('Source', 'Coolify');
+
+        return $message;
     }
 }

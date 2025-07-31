@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class DockerCleanupFailed extends CustomEmailNotification
@@ -65,5 +66,24 @@ class DockerCleanupFailed extends CustomEmailNotification
             description: "Docker cleanup job failed on '{$this->server->name}'!\n\n{$this->message}",
             color: SlackMessage::errorColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: '[ACTION REQUIRED] Docker cleanup job failed',
+            summary: "Docker cleanup job failed on {$this->server->name}",
+            themeColor: TeamsMessage::errorColor()
+        );
+
+        $message->addSection(
+            'Docker Cleanup Failed',
+            $this->server->name,
+            "Docker cleanup job has failed on server '{$this->server->name}'."
+        );
+
+        $message->addFact('Error Message', substr($this->message, 0, 100) . (strlen($this->message) > 100 ? '...' : ''));
+
+        return $message;
     }
 }

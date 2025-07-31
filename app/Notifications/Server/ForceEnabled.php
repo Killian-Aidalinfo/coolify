@@ -7,6 +7,7 @@ use App\Notifications\CustomEmailNotification;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 
 class ForceEnabled extends CustomEmailNotification
@@ -64,5 +65,26 @@ class ForceEnabled extends CustomEmailNotification
             description: "Server '{$this->server->name}' enabled again!",
             color: SlackMessage::successColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $message = new TeamsMessage(
+            title: 'Server enabled',
+            summary: "Server '{$this->server->name}' has been enabled",
+            themeColor: TeamsMessage::successColor()
+        );
+
+        $message->addSection(
+            'Server Force Enabled',
+            $this->server->name,
+            "Server has been enabled again and is now fully operational."
+        );
+
+        $message->addFact('Server Name', $this->server->name)
+            ->addFact('Status', 'Enabled')
+            ->addFact('Action', 'Server restored to full functionality');
+
+        return $message;
     }
 }

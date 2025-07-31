@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Notifications\Dto\DiscordMessage;
 use App\Notifications\Dto\PushoverMessage;
 use App\Notifications\Dto\SlackMessage;
+use App\Notifications\Dto\TeamsMessage;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Collection;
 use Spatie\Url\Url;
@@ -147,5 +148,33 @@ class SslExpirationNotification extends CustomEmailNotification
             description: $description,
             color: SlackMessage::warningColor()
         );
+    }
+
+    public function toTeams(): TeamsMessage
+    {
+        $resourceNames = $this->resources->pluck('name')->join(', ');
+        
+        $message = new TeamsMessage(
+            title: 'SSL Certificates Renewed',
+            summary: "SSL certificates renewed for: {$resourceNames}",
+            themeColor: TeamsMessage::warningColor()
+        );
+
+        $message->addSection(
+            'SSL Certificate Renewal',
+            'Action Required',
+            "SSL certificates have been renewed for {$this->resources->count()} resource(s): {$resourceNames}. These resources need to be redeployed manually for the new SSL certificates to take effect."
+        );
+
+        $message->addFact('Resources Affected', (string) $this->resources->count())
+            ->addFact('Resource Names', $resourceNames)
+            ->addFact('Action Required', 'Manual redeployment needed');
+
+        // Add action buttons for each resource
+        foreach ($this->urls as $name => $url) {
+            $message->addAction("View {$name}", $url);
+        }
+
+        return $message;
     }
 }
